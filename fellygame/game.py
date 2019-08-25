@@ -6,6 +6,8 @@ import math
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 MOVEMENT_SPEED = 5
+BADDY_SPEED = 2
+
 
 class FailedIt(arcade.View):
 
@@ -49,24 +51,31 @@ class MyGame(arcade.View):
         super().__init__()
         self.score = 0
         self.end_text = ""
-        self.old_paul_x = -1
-        self.old_paul_y = -1
         self.shoes = arcade.SpriteList()
         self.felly = arcade.Sprite('images/felly.png', 0.2)
         self.felly.center_x = 400
         self.felly.center_y = 300
         self.paul = arcade.Sprite('images/paul.png', 0.2)
-        self.paul.center_x = random.randrange(0, SCREEN_WIDTH-10)
-        self.paul.center_y = random.randrange(0, SCREEN_HEIGHT-10)
+        self.paul.center_x = random.randrange(50, SCREEN_WIDTH-50)
+        self.paul.center_y = random.randrange(50, SCREEN_HEIGHT-50)
+        self.baddybadguy = arcade.Sprite('images/baddybadguy.png', 0.2)
+        self.baddybadguy.center_x = random.randrange(50, SCREEN_WIDTH-50)
+        self.baddybadguy.center_y = random.randrange(50, SCREEN_HEIGHT-50)
         self.walls = arcade.SpriteList()
         self.create_walls()
+        self.felly_speed = 5
+        self.baddy_speed = 2
+        self.baddy_speed = 2
+        self.counter = 0
+        self.multiplier = 1
         for i in range(0, 100):
             shoe = arcade.Sprite('images/shoe.png', 0.1)
-            shoe.center_x = random.randrange(0, SCREEN_WIDTH-10)
-            shoe.center_y = random.randrange(0, SCREEN_HEIGHT-10)
+            shoe.center_x = random.randrange(50, SCREEN_WIDTH-50)
+            shoe.center_y = random.randrange(50, SCREEN_HEIGHT-50)
             self.shoes.append(shoe)
         self.physics_engine = arcade.PhysicsEngineSimple(self.felly, self.walls)
         self.physics_engine2 = arcade.PhysicsEngineSimple(self.paul, self.walls)
+        self.physics_engine3 = arcade.PhysicsEngineSimple(self.baddybadguy, self.walls)
 
     def create_walls(self):
         for i in range(0, SCREEN_WIDTH):
@@ -99,61 +108,74 @@ class MyGame(arcade.View):
         self.shoes.draw()
         self.walls.draw()
         self.paul.draw()
+        self.baddybadguy.draw()
         output = f"Score: {self.score}"
         arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
 
     def update(self, delta_time):
         """ All the logic to move, and the game logic goes here. """
+        if self.counter > 0:
+            self.felly_speed = MOVEMENT_SPEED * self.multiplier
+            self.baddy_speed = BADDY_SPEED * self.multiplier
+            self.counter -= 1
+        else:
+            self.felly_speed = MOVEMENT_SPEED
+            self.baddy_speed = BADDY_SPEED
+            self.multiplier = 1
         self.shoes.update()
         collisions = arcade.check_for_collision_with_list(self.felly, self.shoes)
         for collision in collisions:
             self.score += 1
             collision.kill()
         dead_collision = arcade.check_for_collision(self.felly, self.paul)
-        if dead_collision:
+        baddybadguy_collision = arcade.check_for_collision(self.felly, self.baddybadguy)
+        if dead_collision or baddybadguy_collision:
             failed_it = FailedIt()
             self.window.show_view(failed_it)
         if self.score == 100:
             nailed_it = NailedIt()
             self.window.show_view(nailed_it)
-        self.move_paul()
+        self.move_baddy(self.paul)
+        self.move_baddy(self.baddybadguy)
         self.physics_engine.update()
         self.physics_engine2.update()
+        self.physics_engine3.update()
 
-    def move_paul(self):
+    def move_baddy(self, baddy):
         felly_coords = self.felly.position
-        paul_coords = self.paul.position
-        diff_x = felly_coords[0] - paul_coords[0]
-        diff_y = felly_coords[1] - paul_coords[1]
+        baddy_coords = baddy.position
+        diff_x = felly_coords[0] - baddy_coords[0]
+        diff_y = felly_coords[1] - baddy_coords[1]
         if diff_y == 0:
-            self.paul.change_x = 0
+            baddy.change_x = 0
         elif diff_x > 0:
-            self.paul.change_x = min((math.fabs(diff_x) / math.fabs(diff_y)), 2)
+            baddy.change_x = min((math.fabs(diff_x) / math.fabs(diff_y)), self.baddy_speed)
         else:
-            self.paul.change_x = -1 * min((math.fabs(diff_x) / math.fabs(diff_y)), 2)
+            baddy.change_x = -1 * min((math.fabs(diff_x) / math.fabs(diff_y)), self.baddy_speed)
         if diff_x == 0:
-            self.paul.change_y = 0
+            baddy.change_y = 0
         elif diff_y > 0:
-            self.paul.change_y = min((math.fabs(diff_y) / math.fabs(diff_x)), 2)
+            baddy.change_y = min((math.fabs(diff_y) / math.fabs(diff_x)), self.baddy_speed)
         else:
-            self.paul.change_y = -1 * min((math.fabs(diff_y) / math.fabs(diff_x)), 2)
+            baddy.change_y = -1 * min((math.fabs(diff_y) / math.fabs(diff_x)), self.baddy_speed)
 
-        print(self.paul.change_x)
-        print(self.paul.change_y)
-
-
+        print(baddy.change_x)
+        print(baddy.change_y)
 
     def on_key_press(self, key, modifiers):
         """Called whenever a key is pressed. """
 
         if key == arcade.key.UP:
-            self.felly.change_y = MOVEMENT_SPEED
+            self.felly.change_y = self.felly_speed * self.multiplier
         elif key == arcade.key.DOWN:
-            self.felly.change_y = -MOVEMENT_SPEED
+            self.felly.change_y = -self.felly_speed * self.multiplier
         elif key == arcade.key.LEFT:
-            self.felly.change_x = -MOVEMENT_SPEED
+            self.felly.change_x = -self.felly_speed * self.multiplier
         elif key == arcade.key.RIGHT:
-            self.felly.change_x = MOVEMENT_SPEED
+            self.felly.change_x = self.felly_speed * self.multiplier
+        elif key == arcade.key.SPACE:
+            self.counter = 100
+            self.multiplier = 2
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """
