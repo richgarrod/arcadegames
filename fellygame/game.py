@@ -128,15 +128,15 @@ class MyGame(arcade.View):
         if diff_y == 0:
             self.paul.change_x = 0
         elif diff_x > 0:
-            self.paul.change_x = min((math.fabs(diff_x) / math.fabs(diff_y)), 1)
+            self.paul.change_x = min((math.fabs(diff_x) / math.fabs(diff_y)), 2)
         else:
-            self.paul.change_x = -1 * min((math.fabs(diff_x) / math.fabs(diff_y)), 1)
+            self.paul.change_x = -1 * min((math.fabs(diff_x) / math.fabs(diff_y)), 2)
         if diff_x == 0:
             self.paul.change_y = 0
         elif diff_y > 0:
-            self.paul.change_y = min((math.fabs(diff_y) / math.fabs(diff_x)), 1)
+            self.paul.change_y = min((math.fabs(diff_y) / math.fabs(diff_x)), 2)
         else:
-            self.paul.change_y = -1 * min((math.fabs(diff_y) / math.fabs(diff_x)), 1)
+            self.paul.change_y = -1 * min((math.fabs(diff_y) / math.fabs(diff_x)), 2)
 
         print(self.paul.change_x)
         print(self.paul.change_y)
