@@ -1,45 +1,16 @@
 import arcade
 import random
-import time
 import math
+from fail_view import FailedIt
+from nail_view import NailedIt
+from utils import create_walls
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 MOVEMENT_SPEED = 5
 BADDY_SPEED = 2
-
-
-class FailedIt(arcade.View):
-
-    def on_show(self):
-        arcade.set_background_color(arcade.color.ALABAMA_CRIMSON)
-
-    def __init__(self):
-        super().__init__()
-        self.fail_text = "YOU FAILED. LOSER!"
-
-    def on_draw(self):
-        arcade.start_render()
-        arcade.draw_text(self.fail_text, 50, 200, arcade.color.WHITE, 25)
-
-    def on_key_press(self, key, modifiers):
-        arcade.close_window()
-
-class NailedIt(arcade.View):
-
-    def on_show(self):
-        arcade.set_background_color(arcade.color.APPLE_GREEN)
-
-    def __init__(self):
-        super().__init__()
-        self.success_text = "YOU FUCKING NAILED IT YOU ABSOLUTE HERO"
-
-    def on_draw(self):
-        arcade.start_render()
-        arcade.draw_text(self.success_text, 50, 200, arcade.color.RED, 25)
-
-    def on_key_press(self, key, modifiers):
-        arcade.close_window()
+LEMON_COUNT = 10
+SHOE_COUNT = 100
 
 class MyGame(arcade.View):
     """ Main application class. """
@@ -52,6 +23,8 @@ class MyGame(arcade.View):
         self.score = 0
         self.end_text = ""
         self.shoes = arcade.SpriteList()
+        self.lemons = arcade.SpriteList()
+        self.lemon_count = LEMON_COUNT
         self.felly = arcade.Sprite('images/felly.png', 0.2)
         self.felly.center_x = 400
         self.felly.center_y = 300
@@ -59,46 +32,27 @@ class MyGame(arcade.View):
         self.paul.center_x = random.randrange(50, SCREEN_WIDTH-50)
         self.paul.center_y = random.randrange(50, SCREEN_HEIGHT-50)
         self.baddybadguy = arcade.Sprite('images/baddybadguy.png', 0.2)
-        self.baddybadguy.center_x = random.randrange(50, SCREEN_WIDTH-50)
-        self.baddybadguy.center_y = random.randrange(50, SCREEN_HEIGHT-50)
-        self.walls = arcade.SpriteList()
-        self.create_walls()
+        self.baddybadguy.center_x = random.randrange(20, SCREEN_WIDTH-20)
+        self.baddybadguy.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+        self.walls = create_walls(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.felly_speed = 5
         self.baddy_speed = 2
         self.baddy_speed = 2
         self.counter = 0
         self.multiplier = 1
-        for i in range(0, 100):
+        for i in range(SHOE_COUNT):
             shoe = arcade.Sprite('images/shoe.png', 0.1)
-            shoe.center_x = random.randrange(50, SCREEN_WIDTH-50)
-            shoe.center_y = random.randrange(50, SCREEN_HEIGHT-50)
+            shoe.center_x = random.randrange(20, SCREEN_WIDTH-20)
+            shoe.center_y = random.randrange(20, SCREEN_HEIGHT-20)
             self.shoes.append(shoe)
+        for i in range(LEMON_COUNT):
+            lemon = arcade.Sprite('images/lemon.png', 0.1)
+            lemon.center_x = random.randrange(20, SCREEN_WIDTH-20)
+            lemon.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+            self.lemons.append(lemon)
         self.physics_engine = arcade.PhysicsEngineSimple(self.felly, self.walls)
         self.physics_engine2 = arcade.PhysicsEngineSimple(self.paul, self.walls)
         self.physics_engine3 = arcade.PhysicsEngineSimple(self.baddybadguy, self.walls)
-
-    def create_walls(self):
-        for i in range(0, SCREEN_WIDTH):
-            wall = arcade.Sprite('images/wall.png', 0.1)
-            wall.center_y = 0
-            wall.center_x = i
-            self.walls.append(wall)
-        for i in range(0, SCREEN_WIDTH):
-            wall = arcade.Sprite('images/wall.png', 0.1)
-            wall.center_y = SCREEN_HEIGHT
-            wall.center_x = i
-            self.walls.append(wall)
-        for i in range(0, SCREEN_HEIGHT):
-            wall = arcade.Sprite('images/wall.png', 0.1)
-            wall.center_x = 0
-            wall.center_y = i
-            self.walls.append(wall)
-        for i in range(0, SCREEN_HEIGHT):
-            wall = arcade.Sprite('images/wall.png', 0.1)
-            wall.center_x = SCREEN_WIDTH
-            wall.center_y = i
-            self.walls.append(wall)
-
 
     def on_draw(self):
         """ Render the screen. """
@@ -106,6 +60,7 @@ class MyGame(arcade.View):
         # Your drawing code goes here
         self.felly.draw()
         self.shoes.draw()
+        self.lemons.draw()
         self.walls.draw()
         self.paul.draw()
         self.baddybadguy.draw()
@@ -127,12 +82,20 @@ class MyGame(arcade.View):
         for collision in collisions:
             self.score += 1
             collision.kill()
+        lemon_collisions = arcade.check_for_collision_with_list(self.felly, self.lemons)
+        for lemon_collision in lemon_collisions:
+            self.lemon_count -= 1
+            print(self.lemon_count)
+            lemon_collision.kill()
+            if self.lemon_count == 0:
+                print("Killing bum")
+                self.baddybadguy.kill()
         dead_collision = arcade.check_for_collision(self.felly, self.paul)
         baddybadguy_collision = arcade.check_for_collision(self.felly, self.baddybadguy)
         if dead_collision or baddybadguy_collision:
             failed_it = FailedIt()
             self.window.show_view(failed_it)
-        if self.score == 100:
+        if self.score == SHOE_COUNT:
             nailed_it = NailedIt()
             self.window.show_view(nailed_it)
         self.move_baddy(self.paul)
@@ -159,23 +122,21 @@ class MyGame(arcade.View):
         else:
             baddy.change_y = -1 * min((math.fabs(diff_y) / math.fabs(diff_x)), self.baddy_speed)
 
-        print(baddy.change_x)
-        print(baddy.change_y)
-
     def on_key_press(self, key, modifiers):
         """Called whenever a key is pressed. """
-
         if key == arcade.key.UP:
-            self.felly.change_y = self.felly_speed * self.multiplier
+            self.felly.change_y = self.felly_speed
         elif key == arcade.key.DOWN:
-            self.felly.change_y = -self.felly_speed * self.multiplier
+            self.felly.change_y = -self.felly_speed
         elif key == arcade.key.LEFT:
-            self.felly.change_x = -self.felly_speed * self.multiplier
+            self.felly.change_x = -self.felly_speed
         elif key == arcade.key.RIGHT:
-            self.felly.change_x = self.felly_speed * self.multiplier
+            self.felly.change_x = self.felly_speed
         elif key == arcade.key.SPACE:
             self.counter = 100
             self.multiplier = 2
+            self.felly.change_x *= self.multiplier
+            self.felly.change_y *= self.multiplier
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """
