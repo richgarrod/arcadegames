@@ -79,7 +79,23 @@ class MyGame(arcade.View):
             self.felly_speed = MOVEMENT_SPEED
             self.baddy_speed = BADDY_SPEED
             self.multiplier = 1
+        self.check_for_catches()
+        self.check_for_death()
+        self.check_baddy_collision()
         self.shoes.update()
+        self.move_baddy(self.paul)
+        self.move_baddy(self.baddybadguy)
+        self.physics_engine.update()
+        self.physics_engine2.update()
+        self.physics_engine3.update()
+
+    def check_baddy_collision():
+        baddy_collision = arcade_check_for_collision(self.baddybadguy, self.paul)
+        if baddy_collision:
+            self.baddybadguy.center_x = random.randrange(20, SCREEN_WIDTH-20)
+            self.baddybadguy.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+
+    def check_for_catches()
         collisions = arcade.check_for_collision_with_list(self.felly, self.shoes)
         for collision in collisions:
             self.score += 1
@@ -92,6 +108,8 @@ class MyGame(arcade.View):
             if self.lemon_count == 0:
                 print("Killing bum")
                 self.baddybadguy.kill()
+
+    def check_for_death():
         dead_collision = arcade.check_for_collision(self.felly, self.paul)
         baddybadguy_collision = arcade.check_for_collision(self.felly, self.baddybadguy)
         if dead_collision or baddybadguy_collision:
@@ -100,11 +118,6 @@ class MyGame(arcade.View):
         if self.score == SHOE_COUNT:
             nailed_it = NailedIt()
             self.window.show_view(nailed_it)
-        self.move_baddy(self.paul)
-        self.move_baddy(self.baddybadguy)
-        self.physics_engine.update()
-        self.physics_engine2.update()
-        self.physics_engine3.update()
 
     def move_baddy(self, baddy):
         felly_coords = self.felly.position
