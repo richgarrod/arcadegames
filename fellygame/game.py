@@ -24,6 +24,7 @@ class MyGame(arcade.View):
         self.end_text = ""
         self.shoes = arcade.SpriteList()
         self.lemons = arcade.SpriteList()
+        self.baddies = arcade.SpriteList()
         self.lemon_count = LEMON_COUNT
         self.felly = arcade.Sprite('images/felly.png', 0.2)
         self.felly.center_x = 400
@@ -31,9 +32,11 @@ class MyGame(arcade.View):
         self.paul = arcade.Sprite('images/paul.png', 0.2)
         self.paul.center_x = random.randrange(50, SCREEN_WIDTH-50)
         self.paul.center_y = random.randrange(50, SCREEN_HEIGHT-50)
+        self.baddies.append(self.paul)
         self.baddybadguy = arcade.Sprite('images/baddybadguy.png', 0.2)
         self.baddybadguy.center_x = random.randrange(20, SCREEN_WIDTH-20)
         self.baddybadguy.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+        self.baddies.append(self.baddybadguy)
         self.walls = create_walls(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.felly_speed = 5
         self.baddy_speed = 2
@@ -62,8 +65,7 @@ class MyGame(arcade.View):
         self.shoes.draw()
         self.lemons.draw()
         self.walls.draw()
-        self.paul.draw()
-        self.baddybadguy.draw()
+        self.baddies.draw()
         output = f"Score: {self.score}"
         arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
 
