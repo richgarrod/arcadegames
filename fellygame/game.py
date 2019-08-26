@@ -30,12 +30,10 @@ class MyGame(arcade.View):
         self.felly.center_x = 400
         self.felly.center_y = 300
         self.paul = arcade.Sprite('images/paul.png', 0.2)
-        self.paul.center_x = random.randrange(50, SCREEN_WIDTH-50)
-        self.paul.center_y = random.randrange(50, SCREEN_HEIGHT-50)
+        self.paul.center_x, self.paul.center_y = self.get_acceptable_coordinates()
         self.baddies.append(self.paul)
         self.baddybadguy = arcade.Sprite('images/baddybadguy.png', 0.2)
-        self.baddybadguy.center_x = random.randrange(20, SCREEN_WIDTH-20)
-        self.baddybadguy.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+        self.baddybadguy.center_x, self.baddybadguy.center_y = self.get_acceptable_coordinates()
         self.baddies.append(self.baddybadguy)
         self.walls = create_walls(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.felly_speed = 5
@@ -79,6 +77,7 @@ class MyGame(arcade.View):
             self.felly_speed = MOVEMENT_SPEED
             self.baddy_speed = BADDY_SPEED
             self.multiplier = 1
+        self.check_for_win()
         self.check_for_catches()
         self.check_for_death()
         self.check_baddy_collision()
@@ -89,13 +88,27 @@ class MyGame(arcade.View):
         self.physics_engine2.update()
         self.physics_engine3.update()
 
-    def check_baddy_collision():
-        baddy_collision = arcade_check_for_collision(self.baddybadguy, self.paul)
-        if baddy_collision:
-            self.baddybadguy.center_x = random.randrange(20, SCREEN_WIDTH-20)
-            self.baddybadguy.center_y = random.randrange(20, SCREEN_HEIGHT-20)
+    def check_for_win(self):
+        if self.score == SHOE_COUNT:
+            nailed_it = NailedIt()
+            self.window.show_view(nailed_it)
 
-    def check_for_catches()
+    def get_acceptable_coordinates(self):
+        need_new_coordinates = True
+        while need_new_coordinates:
+            new_x = random.randrange(20, SCREEN_WIDTH-20)
+            new_y = random.randrange(20, SCREEN_HEIGHT-20)
+            if max(self.felly.center_x, new_x) - min(self.felly.center_x, new_x) > 100 and  max(self.felly.center_y, new_y) - min(self.felly.center_y, new_y) > 100:
+                need_new_coordinates = False
+
+        return new_x, new_y
+
+    def check_baddy_collision(self):
+        baddy_collision = arcade.check_for_collision(self.baddybadguy, self.paul)
+        if baddy_collision:
+            self.baddybadguy.center_x, self.baddybadguy.center_y = self.get_acceptable_coordinates()
+
+    def check_for_catches(self):
         collisions = arcade.check_for_collision_with_list(self.felly, self.shoes)
         for collision in collisions:
             self.score += 1
@@ -109,15 +122,11 @@ class MyGame(arcade.View):
                 print("Killing bum")
                 self.baddybadguy.kill()
 
-    def check_for_death():
-        dead_collision = arcade.check_for_collision(self.felly, self.paul)
-        baddybadguy_collision = arcade.check_for_collision(self.felly, self.baddybadguy)
-        if dead_collision or baddybadguy_collision:
+    def check_for_death(self):
+        dead_collision = arcade.check_for_collision_with_list(self.felly, self.baddies)
+        if dead_collision:
             failed_it = FailedIt()
             self.window.show_view(failed_it)
-        if self.score == SHOE_COUNT:
-            nailed_it = NailedIt()
-            self.window.show_view(nailed_it)
 
     def move_baddy(self, baddy):
         felly_coords = self.felly.position
