@@ -3,12 +3,14 @@ import random
 import math
 from fail_view import FailedIt
 from nail_view import NailedIt
+from baddy_leave_view import BaddyLeave
 from utils import create_walls
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 MOVEMENT_SPEED = 5
 BADDY_SPEED = 2
+MAX_BADDY_SPEED = 5
 LEMON_COUNT = 10
 SHOE_COUNT = 100
 
@@ -25,22 +27,35 @@ class MyGame(arcade.View):
         self.shoes = arcade.SpriteList()
         self.lemons = arcade.SpriteList()
         self.baddies = arcade.SpriteList()
-        self.lemon_count = LEMON_COUNT
+        # Create our hero
         self.felly = arcade.Sprite('images/felly.png', 0.2)
-        self.felly.center_x = 400
-        self.felly.center_y = 300
+        self.felly.center_x = SCREEN_WIDTH / 2
+        self.felly.center_y = SCREEN_HEIGHT / 2
+        # Set speeds and counters
+        self.movement_speed = 0
+        self.felly_speed = 5
+        self.baddy_speed = BADDY_SPEED
+        self.counter = 0
+        self.lemon_count = LEMON_COUNT
+        self.multiplier = 1
+        # Draw baddies, walls and catchables
+        self.draw_baddies()
+        self.walls = create_walls(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.draw_catchables()
+        # Enable physics engines
+        self.physics_engine = arcade.PhysicsEngineSimple(self.felly, self.walls)
+        self.physics_engine2 = arcade.PhysicsEngineSimple(self.paul, self.walls)
+        self.physics_engine3 = arcade.PhysicsEngineSimple(self.baddybadguy, self.walls)
+
+    def draw_baddies(self):
         self.paul = arcade.Sprite('images/paul.png', 0.2)
         self.paul.center_x, self.paul.center_y = self.get_acceptable_coordinates()
         self.baddies.append(self.paul)
         self.baddybadguy = arcade.Sprite('images/baddybadguy.png', 0.2)
         self.baddybadguy.center_x, self.baddybadguy.center_y = self.get_acceptable_coordinates()
         self.baddies.append(self.baddybadguy)
-        self.walls = create_walls(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.felly_speed = 5
-        self.baddy_speed = 2
-        self.baddy_speed = 2
-        self.counter = 0
-        self.multiplier = 1
+
+    def draw_catchables(self):
         for i in range(SHOE_COUNT):
             shoe = arcade.Sprite('images/shoe.png', 0.1)
             shoe.center_x = random.randrange(20, SCREEN_WIDTH-20)
@@ -51,9 +66,6 @@ class MyGame(arcade.View):
             lemon.center_x = random.randrange(20, SCREEN_WIDTH-20)
             lemon.center_y = random.randrange(20, SCREEN_HEIGHT-20)
             self.lemons.append(lemon)
-        self.physics_engine = arcade.PhysicsEngineSimple(self.felly, self.walls)
-        self.physics_engine2 = arcade.PhysicsEngineSimple(self.paul, self.walls)
-        self.physics_engine3 = arcade.PhysicsEngineSimple(self.baddybadguy, self.walls)
 
     def on_draw(self):
         """ Render the screen. """
@@ -63,19 +75,20 @@ class MyGame(arcade.View):
         self.shoes.draw()
         self.lemons.draw()
         self.walls.draw()
+        # Enable physics engines
         self.baddies.draw()
         output = f"Score: {self.score}"
         arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
+        output = f"Movement Speed: {self.movement_speed}"
+        arcade.draw_text(output, 10, SCREEN_HEIGHT-30, arcade.color.WHITE, 14)
 
     def update(self, delta_time):
-        """ All the logic to move, and the game logic goes here. """
+        self.movement_speed = max(math.fabs(self.felly.change_x), math.fabs(self.felly.change_y))
         if self.counter > 0:
             self.felly_speed = MOVEMENT_SPEED * self.multiplier
-            self.baddy_speed = BADDY_SPEED * self.multiplier
             self.counter -= 1
         else:
             self.felly_speed = MOVEMENT_SPEED
-            self.baddy_speed = BADDY_SPEED
             self.multiplier = 1
         self.check_for_win()
         self.check_for_catches()
@@ -113,14 +126,21 @@ class MyGame(arcade.View):
         for collision in collisions:
             self.score += 1
             collision.kill()
+            self.update_baddy_speed()
         lemon_collisions = arcade.check_for_collision_with_list(self.felly, self.lemons)
         for lemon_collision in lemon_collisions:
             self.lemon_count -= 1
             print(self.lemon_count)
             lemon_collision.kill()
             if self.lemon_count == 0:
-                print("Killing bum")
+                baddy_leave_view = BaddyLeave(self)
+                self.window.show_view(baddy_leave_view)
                 self.baddybadguy.kill()
+
+    def update_baddy_speed(self):
+        self.baddy_speed = BADDY_SPEED + (100 - self.lemon_count) * (MAX_BADDY_SPEED - BADDY_SPEED) / SHOE_COUNT
+        print(self.baddy_speed)
+
 
     def check_for_death(self):
         dead_collision = arcade.check_for_collision_with_list(self.felly, self.baddies)
@@ -157,10 +177,11 @@ class MyGame(arcade.View):
         elif key == arcade.key.RIGHT:
             self.felly.change_x = self.felly_speed
         elif key == arcade.key.SPACE:
-            self.counter = 100
-            self.multiplier = 2
-            self.felly.change_x *= self.multiplier
-            self.felly.change_y *= self.multiplier
+            if self.counter == 0:
+                self.counter = 100
+                self.multiplier = 2
+                self.felly.change_x *= self.multiplier
+                self.felly.change_y *= self.multiplier
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """
